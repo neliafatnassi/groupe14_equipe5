@@ -1,53 +1,44 @@
 #include <stdio.h>
-#include "joueur.h"
 
-int main() {
-    Joueur joueurs[MAX_JOUEURS];
-    int nombreJoueurs;
-    char nomRecherche[50];
-    int choix;
-    int index;
+int main(void) {
+#include <stdio.h>
+#include <stdlib.h>
 
-    // lire les données du fichier
-    lireFichier(joueurs, &nombreJoueurs);
+    int main() {
+        int *arrays[10]; // Tableau de pointeurs pour stocker les adresses de 10 tableaux dynamiques
+        int sizes[10];   // Taille de chaque tableau
+        int i, j;
 
-    while (1) {
-        printf("Veuillez taper 1 afin dajouter un joueur\n");
-        printf("Veuillez taper 2 afin dafficher un joueur\n");
-        printf("veuillez taper 3 pour Quitter\n");
-        printf("A vous de jouer, entrez votre choix sil vous plait : ");
-        scanf("%d", &choix);
+        // Initialisation de la taille de chaque tableau
+        for (i = 0; i < 10; i++) {
+            sizes[i] = (i + 1) * 5;  // Exemple : taille de chaque tableau est (i+1) * 5
+            arrays[i] = (int *)malloc(sizes[i] * sizeof(int));  // Allocation dynamique pour chaque tableau
 
-        if (choix == 1) {
-            char nomNouveau[50];
-            int niveauNouveau;
-            int viesNouveau;
-
-            printf("Entrez le nom du nouveau joueur sil vous plait : ");
-            scanf("%s", nomNouveau);
-            printf("Entrez le niveau du nouveau joueur sil vous plait : ");
-            scanf("%d", &niveauNouveau);
-            printf("Entrez les vies restantes du nouveau joueur sil vous plait: ");
-            scanf("%d", &viesNouveau);
-
-            ajouterJoueur(joueurs, &nombreJoueurs, nomNouveau, niveauNouveau, viesNouveau);
-        } else if (choix == 2) {
-            printf("Entrez le nom du joueur à afficher sil vous plait: ");
-            scanf("%s", nomRecherche);
-
-            // afficher et chercher le joueur
-            index = chercherJoueur(joueurs, nombreJoueurs, nomRecherche);
-            if (index == -1) {
-                printf("Joueur non trouvé. Veuillez réessayer sil vous plait.\n");
-            } else {
-                afficherJoueur(&joueurs[index]);
+            // Vérification de la réussite de l'allocation
+            if (arrays[i] == NULL) {
+                printf("Erreur d'allocation mémoire pour le tableau %d\n", i);
+                return 1;  // Sortie en cas d'échec d'allocation
             }
-        } else if (choix == 3) {
-            break;
-        } else {
-            printf("Votre choix invalide. Veuillez réessayer sil vous plait.\n");
         }
+
+        // Remplissage des tableaux avec des valeurs
+        for (i = 0; i < 10; i++) {
+            printf("Tableau %d : ", i + 1);
+            for (j = 0; j < sizes[i]; j++) {
+                arrays[i][j] = j + 1;  // Remplissage avec des valeurs de 1 à taille du tableau
+                printf("%d ", arrays[i][j]);
+            }
+            printf("\n");
+        }
+
+        // Libération de la mémoire allouée
+        for (i = 0; i < 10; i++) {
+            free(arrays[i]);
+        }
+
+        return 0;
     }
 
+    printf("Hello, World!\n");
     return 0;
 }
