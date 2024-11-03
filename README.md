@@ -58,3 +58,6 @@ void monTableau(int tableauVide[9][9]) {
 #define TABLEAU_H
 void monTableau(int tableauVide[9][9]);
 #endif //TABLEAU_H
+                     //Nul//
+
+{}
