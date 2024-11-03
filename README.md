@@ -1,5 +1,15 @@
 # groupe14_equipe5
-
+                        // Config//
+int config(){
+int nb=0;
+printf("Si vous souhaitez jouer une partie a 2,mettez 0 sinon mettez 1");
+scanf("%d", nb);
+if (nb<2)
+  if(nb<1)
+     printf("la partie sera pour 2 joueurs");
+  else 
+     printf("la partie sera pour 4 joueurs");
+}
                         // Menu du jeu//
 int main(void) {
    do{
