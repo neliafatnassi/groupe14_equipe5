@@ -81,7 +81,28 @@ void monTableau(int tableauVide[9][9]);
 #include "plateau.h"
 int main()
 {
-    char pl[T][T];
+  char pl[T][T];
+    int choix=0;
+    int i=0, j=0; //initialisation d'un plateau pour 4 joueurs
+    initialiser_plateau(pl,4);
+    do {
+    afficher_plateau(pl);
+    choix=menu_action(); //a faire
+    if (choix=0){
+    poser_barriere(pl);
+    }
+    if (choix=1){
+    deplacer_pion(pl, &i, &j);
+    }
+    if(choix=2){
+    afficher_plateau(pl);
+    }
+    afficher_plateau(pl);
+   } while(choix!=3)
+    printf("L'un des 2 joueurs a abandonne");
+    
+    return 0;
+    */char pl[T][T];
     int i=0, j=0;
     //initialisation d'un plateau pour 4 joueurs
     initialiser_plateau(pl,4);
@@ -90,7 +111,7 @@ int main()
     afficher_plateau(pl);
     deplacer_pion(pl, &i, &j);
     afficher_plateau(pl);
-    
+    /*
 
     return 0;
 
