@@ -316,9 +316,11 @@ srand(time(NULL));
 int choix=0;
 int i =0;
 int j=0;
+int validation=0;
+int direction=0;
 
-choix=(rand())%2
 do{
+choix=(rand())%2
   if (choix=1){
             i=(rand())%T;
             j=(rand())%T;
@@ -326,7 +328,32 @@ do{
             validation=1; //si la barriere s'est bien pose alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
     }
     if (choix=0){
-    validation= deplacer_pion(pl, &i, &j); //si le pion s'est déplace correctement alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
+    direction=(rand())%4;
+     if (direction=0 && *i>0) {
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *i= (*i)-2; //modification des nouvelles coordonnés horizontale
+        validation=1; //le déplacement s'est bien effectué
+    }
+    else if(direction=1 && *i<T) {
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *i=(*i)+2; //modification des nouvelles coordonnés horizontale
+         validation=1; //le déplacement s'est bien effectué
+    }
+    else if(direction=2 && *j<T) {
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *j=(*j)+2; //modification des nouvelles coordonnés verticale
+        validation=1; //le déplacement s'est bien effectué
+    }
+    else if(direction=3 && *j>0) {
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *j=(*j)-2; //modification des nouvelles coordonnés verticale
+        validation=1; //le déplacement s'est bien effectué
+    }
+    else {
+        validation=0; //le déplacement s'est mal effectué
+    }
+    plateau[*i][*j]=1; //Nouvelle position du pion
 }
+
 }while(validation!=1)
 }
