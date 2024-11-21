@@ -355,5 +355,5 @@ choix=(rand())%2
     plateau[*i][*j]=1; //Nouvelle position du pion
 }
 
-}while(validation!=1)
+}while(validation!=1) //tant que l'ia n'a pas effectué d'action vérifier son tour recommence jusqu'a ce que ca marche
 }
