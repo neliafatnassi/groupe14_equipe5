@@ -64,16 +64,22 @@ void monTableau(int tableauVide[9][9]) {
     }
 }
 
+
+
+\\\le point h\\\
 #ifndef TABLEAU_H
 #define TABLEAU_H
 void monTableau(int tableauVide[9][9]);
+int config();
+void initialiser_plateau(char plateau[T][T],int nj);
+int menu_action ();
+void afficher_plateau(char plateau[T][T]);
+int poser_barriere(char plateau[T][T]);
+int deplacer_pion(char plateau[T][T], int *i, int *j);
 #endif //TABLEAU_H
-                     //Nul//
 
-{}
 
-            
-            
+
             //PARTIE main//
             
 #include <stdio.h>
@@ -83,38 +89,29 @@ int main()
 {
   char pl[T][T];
     int choix=0;
+    int validation = 0;
     int i=0, j=0; //initialisation d'un plateau pour 4 joueurs
     initialiser_plateau(pl,4);
-    do {
+    do { //tant que le choix 4 n'est pas fait la partie continue
+    do { //tant qu'une action n'a pas été validé le programme se relance
     afficher_plateau(pl);
-    choix=menu_action(); //a faire
-    if (choix=0){
-    poser_barriere(pl);
-    }
+    validation =0; //on met notre validation à 0
+    choix=menu_action();
     if (choix=1){
-    deplacer_pion(pl, &i, &j);
+    validation= poser_barriere(pl); //si la barriere s'est bien pose alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
     }
-    if(choix=2){
-    afficher_plateau(pl);
+    if (choix=2){
+    validation= deplacer_pion(pl, &i, &j); //si le pion s'est déplace correctement alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
     }
+    if(choix=3){
+    afficher_plateau(pl); //ici le joueur décide de sauter son tour donc la validation est automatique
+    validation = 1;
+    }
+    } while(validation!=1)
     afficher_plateau(pl);
-   } while(choix!=3)
-    printf("L'un des 2 joueurs a abandonne");
-    
-    return 0;
-    */char pl[T][T];
-    int i=0, j=0;
-    //initialisation d'un plateau pour 4 joueurs
-    initialiser_plateau(pl,4);
-    afficher_plateau(pl);
-    poser_barriere(pl);
-    afficher_plateau(pl);
-    deplacer_pion(pl, &i, &j);
-    afficher_plateau(pl);
-    /*
-
-    return 0;
-
+   } while(choix!=4)
+    printf("L'un des 2 joueurs abandonne");
+    return 1;
 }
 
                   //PARTIE .c //
@@ -151,6 +148,32 @@ void initialiser_plateau(char plateau[T][T],int nj)
         plateau[T/2][T-1]=4;
     }
 }
+\\\menu des actions\\\
+#include <stdio.h>
+int menu_action (){
+int selec=0;
+int validation=0;
+do{
+printf("Entrez l'action que vous souhaitez effectue : 1)poser une barriere\n 2)deplacer son pion\n 3)sauter son tour\n 4)abandon de la partie\n"); //affiche les possibilités
+scanf("%d", &selec);
+if(selec<5 && selec>0){ //verifie que le nombre saisi est correct
+if (selec=4){ //si le joueur décide d'abandonner un avertissement s'ouvre en cas de mauvaise manipulation
+printf("attention tout abandon est définitif et entraine directement la fin de la partie\n");
+printf("saisissez 1 si vous souhaitez abandonner definitivement\n");
+scanf("%d", &validation); //on demande la saisi d'une validation à la main pour l'abandon
+  if (validation!=1){
+  selec=0;
+  printf("vous allez etre renvoye au menu");
+}
+}
+else {
+validation=1; //on valide que le programme a bien été effectué
+}
+}
+}while(validation!=1) //tant que le programme n'a pas bien été effectué donc tant qu'on n'a pas choisi une option valide, le menu se relance
+return selec; //on retourne à notre main l'option choisi
+}
+
 
 
 void afficher_plateau(char plateau[T][T])
@@ -259,22 +282,22 @@ int deplacer_pion(char plateau[T][T], int *i, int *j) {
     scanf("%c", &direction);
     if (direction=='h' && *i>0) {
         plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
-        *i= (*i)-2; //modification des nouvelles coordonnés
+        *i= (*i)-2; //modification des nouvelles coordonnés horizontale
         return 1; //le déplacement s'est bien effectué
     }
     else if(direction=='b' && *i<T) {
         plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
-        *i=(*i)+2; //modification des nouvelles coordonnés
+        *i=(*i)+2; //modification des nouvelles coordonnés horizontale
         return 1; //le déplacement s'est bien effectué
     }
     else if(direction=='d' && *j<T) {
         plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
-        *j=(*j)+2; //modification des nouvelles coordonnés
+        *j=(*j)+2; //modification des nouvelles coordonnés verticale
         return 1; //le déplacement s'est bien effectué
     }
     else if(direction=='g' && *j>0) {
         plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
-        *j=(*j)-2; //modification des nouvelles coordonnés
+        *j=(*j)-2; //modification des nouvelles coordonnés verticale
         return 1; //le déplacement s'est bien effectué
     }
     else {
@@ -283,10 +306,3 @@ int deplacer_pion(char plateau[T][T], int *i, int *j) {
     }
     plateau[*i][*j]=1; //Nouvelle position du pion
 }
-
-                    //PARTIE .h//
-
-void initialiser_plateau(char plateau[T][T],int nj);
-void afficher_plateau(char plateau[T][T]);
-void poser_barriere(char plateau[T][T]);
-void deplacer_pion(char plateau[T][T], int *i, int *j);
