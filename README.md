@@ -306,3 +306,27 @@ int deplacer_pion(char plateau[T][T], int *i, int *j) {
     }
     plateau[*i][*j]=1; //Nouvelle position du pion
 }
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+int IA (){
+srand(time(NULL));
+int choix=0;
+int i =0;
+int j=0;
+
+choix=(rand())%2
+do{
+  if (choix=1){
+            i=(rand())%T;
+            j=(rand())%T;
+            plateau[i][j]=5;
+            validation=1; //si la barriere s'est bien pose alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
+    }
+    if (choix=0){
+    validation= deplacer_pion(pl, &i, &j); //si le pion s'est déplace correctement alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
+}
+}while(validation!=1)
+}
