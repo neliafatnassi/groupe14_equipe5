@@ -226,55 +226,62 @@ void afficher_plateau(char plateau[T][T])
 }
 
 
-void poser_barriere(char plateau[T][T]) {
-    char choixBarriere;
-    int i,j;
-    printf("Voulez-vous posez une barriere ? o=oui et n=non\n", choixBarriere);
+int poser_barriere(char plateau[T][T]) {
+    char choixBarriere ='0';
+    int i=0;
+    int j=0;
+    printf("Voulez-vous posez une barriere ? o=oui sinon saisissez un autre caractere \n");
     scanf("%c", &choixBarriere);
     if(choixBarriere=='o') {
-        printf("Saisir les coordonees pour votre barriere\n", i, j);
+        printf("Saisir les coordonnees pour votre barriere\n");
         scanf("%d %d", &i, &j);
         //Vérification des valeurs rentrées
         if (i>=0 && i<T && j>=0 && j<T) {
             plateau[i][j]=5;
+            return 1;
         }else {
-            printf("Indices invalides. Rentrez d'autres valeurs\n");
+            printf("Indices invalides. Vous allez etre renvoye au menu\n");
+            return 0;
         }
-
-    }else {
-        printf("Veuillez choisir une autre action\n");
+      else {
+       printf("vous allez etre renvoye au menu\n");
+       return 0;
+      }
     }
 }
 
 
 
-void deplacer_pion(char plateau[T][T], int *i, int *j) {
+int deplacer_pion(char plateau[T][T], int *i, int *j) {
     char direction;
     printf("Dans quelle direction voulez-vous deplacer votre pion ?\n");
-    printf(" h(haut), b(bas), d(droite), g(gauche)\n", direction);
+    printf(" h(haut), b(bas), d(droite), g(gauche)\n"); //affichage des commandes
     scanf("%c", &direction);
-
-    //Suppression de l'ancienne position du pion
-    plateau[*i][*j]= ' ';
-
-    //Nouvelle position du pion
     if (direction=='h' && *i>0) {
-        *i= (*j)-2;
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *i= (*i)-2; //modification des nouvelles coordonnés
+        return 1; //le déplacement s'est bien effectué
     }
     else if(direction=='b' && *i<T) {
-        *i=(*i)+2;
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *i=(*i)+2; //modification des nouvelles coordonnés
+        return 1; //le déplacement s'est bien effectué
     }
-    else if(direction=='d' && *i<T) {
-        *i=(*i)+2;
+    else if(direction=='d' && *j<T) {
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *j=(*j)+2; //modification des nouvelles coordonnés
+        return 1; //le déplacement s'est bien effectué
     }
     else if(direction=='g' && *j>0) {
-        *j=(*j)-2;
+        plateau[*i][*j]= '0'; //Suppression de l'ancienne position du pion
+        *j=(*j)-2; //modification des nouvelles coordonnés
+        return 1; //le déplacement s'est bien effectué
     }
     else {
         printf("Ce mouvement n'est pas possible\n");
+        return 0; //le déplacement s'est mal effectué
     }
-
-    plateau[*i][*j]=1;
+    plateau[*i][*j]=1; //Nouvelle position du pion
 }
 
                     //PARTIE .h//
