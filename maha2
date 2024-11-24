@@ -55,7 +55,7 @@ int main() {
                             joueurs[joueur_actuel].y = y;
 
                             // Vérifie si le joueur a gagné
-                            if (a_gagne(joueur_actuel + 1, plateau)) {
+                            if (gagnant(joueur_actuel + 1, plateau)) {
                                 printf("\nFélicitations %s, vous avez gagné !\n", joueurs[joueur_actuel].nom);
                                 joueurs[joueur_actuel].score += 5;
                                 break;
@@ -398,7 +398,7 @@ bool a_gagne(int joueur, char plateau[T][T]);
 #include <stdio.h>
 #include "joueurs.h"
 
-bool a_gagne(int joueur, char plateau[T][T]) {
+bool gagnant(int joueur, char plateau[T][T]) {
     // Vérifie si le joueur 1 atteint la ligne la plus basse
     if (joueur == 1) {
         for (int i = 0; i < T; i++) {
