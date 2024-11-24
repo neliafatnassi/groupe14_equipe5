@@ -1,0 +1,495 @@
+MAIN
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "tableau.h"
+int menu_fin_de_partie() {
+    int choix;
+    printf("\nQue voulez-vous faire ?\n");
+    printf("1. Retourner au menu principal\n");
+    printf("2. Quitter le jeu\n");
+    printf("Votre choix: ");
+    scanf("%d", &choix);
+
+    // On vérifie que le choix est valide
+    while (choix < 1 || choix > 2) {
+        printf("Choix invalide. Veuillez entrer 1 pour revenir au menu ou 2 pour quitter : ");
+        scanf("%d", &choix);
+    }
+
+    return choix;
+}
+int main() {
+    char pl[T][T], direction;
+    int x, y;
+    int choix = 0;
+    int validation = 0;
+    int joueur_actuel = 1;
+    int barrieres[4] = {0};
+    int scores[4] = {0};  // Tableau pour les scores
+    char noms[4][50];     // Tableau pour les noms des joueurs
+    int nj;
+
+    // Demander le nombre de joueurs
+    nj = choisir_nombre_joueurs();
+
+    // Initialisation du plateau et des barrières
+    initialiser_plateau(pl, nj);
+    initialiser_barrieres(barrieres, nj);
+
+    // Demander les noms des joueurs
+    for (int i = 0; i < nj; i++) {
+        printf("Entrez le nom du joueur %d : ", i + 1);
+        scanf("%s", noms[i]);
+    }
+
+    do {
+        do {
+            printf("\n\n\n");
+            afficher_plateau(pl);
+            printf("C'est au joueur %d de jouer\n", joueur_actuel);
+            validation = 0; // on met notre validation à 0
+            choix = menu_action();
+
+            if (choix == 1) {
+                // Vérifier si le joueur a des barrières disponibles
+                if (barrieres[joueur_actuel - 1] > 0) {
+                    validation = poser_barriere(pl); // Si la barrière est posée correctement, validation devient 1
+                    if (validation) {
+                        barrieres[joueur_actuel - 1]--; // Réduire le nombre de barrières
+                        printf("Joueur %d, il vous reste %d barrières\n", joueur_actuel, barrieres[joueur_actuel - 1]);
+                        scores[joueur_actuel - 1]++; // Ajouter un point pour la pose de la barrière
+                    }
+                } else {
+                    printf("Joueur %d, vous n'avez plus de barrières disponibles\n", joueur_actuel);
+                }
+            }
+
+            if (choix == 2) {
+                // Déplacer le pion
+                validation = deplacer_pion(pl, x, y, direction);
+                if (validation) {
+                    scores[joueur_actuel - 1]++; // Ajouter un point pour le déplacement
+                }
+            }
+
+            if (choix == 3) {
+                afficher_plateau(pl); // Le joueur saute son tour, donc validation est automatique
+                validation = 1;
+            }
+
+        } while (validation != 1);  // Tant qu'une action n'a pas été validée, recommencer
+
+        // Vérifier si le joueur a gagné
+        if (a_gagne(joueur_actuel, pl)) {
+            printf("Le joueur %d (%s) a gagne !\n", joueur_actuel, noms[joueur_actuel - 1]);
+            break; // Sortir de la boucle si un joueur a gagné
+        }
+
+        joueur_actuel = (joueur_actuel % nj) + 1; // Passer au joueur suivant
+        afficher_plateau(pl);
+
+    } while (choix != 4);  // Tant que le choix n'est pas 4 (abandon), la partie continue
+
+    printf("L'un des joueurs abandonne\n");
+
+    // Afficher et sauvegarder les scores à la fin de la partie
+    afficher_scores(scores, nj);
+    sauvegarder_scores(scores, nj, noms);
+
+    return 0;
+}
+
+
+TABLEAU.H
+#ifndef TABLEAU_H
+#define TABLEAU_H
+
+#include <stdbool.h>
+
+#define T 17
+
+// Déclarations des fonctions
+int choisir_nombre_joueurs();
+void initialiser_plateau(char plateau[T][T], int nj);
+void initialiser_barrieres(int barrieres[], int nj);
+int menu_action();
+void afficher_plateau(char plateau[T][T]);
+int poser_barriere(char plateau[T][T]);
+bool deplacer_pion(char plateau[T][T], int x, int y, char direction);
+int IA(char plateau[T][T], int *i, int *j);
+
+// Fonctions pour la gestion des scores et de la victoire
+bool a_gagne(int joueur, char plateau[T][T]);
+void sauvegarder_scores(int scores[], int nj, char noms[][50]);
+void afficher_scores(int scores[], int nj);
+
+#endif // TABLEAU_H
+
+plateau.c 
+
+
+#include <stdio.h>
+#include "tableau.h"
+#include <stdbool.h>
+#include <windows.h>
+#include <stdlib.h>
+#include <time.h>
+// Fonction pour vérifier si un joueur a gagné
+bool a_gagne(int joueur, char plateau[T][T]) {
+    // Si le joueur 1 atteint la ligne la plus basse, il gagne
+    if (joueur == 1) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[T - 1][i] == 1) {
+                return true;  // Le joueur 1 a gagné
+            }
+        }
+    }
+
+    // Si le joueur 2 atteint la ligne la plus haute, il gagne
+    if (joueur == 2) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[0][i] == 2) {
+                return true;  // Le joueur 2 a gagné
+            }
+        }
+    }
+
+    // Ajoute des conditions similaires pour les joueurs 3 et 4 si nécessaire
+    if (joueur == 3) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[0][i] == 3) {
+                return true;  // Le joueur 3 a gagné
+            }
+        }
+    }
+
+    if (joueur == 4) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[T - 1][i] == 4) {
+                return true;  // Le joueur 4 a gagné
+            }
+        }
+    }
+
+    return false;  // Aucun joueur n'a gagné
+}
+
+// Fonction pour sauvegarder les scores dans un fichier texte
+void sauvegarder_scores(int scores[], int nj, char noms[][50]) {
+    FILE *file = fopen("scores.txt", "w");
+    if (file != NULL) {
+        for (int i = 0; i < nj; i++) {
+            fprintf(file, "Joueur %d (%s) : %d points\n", i + 1, noms[i], scores[i]);
+        }
+        fclose(file);
+    } else {
+        printf("Erreur lors de l'ouverture du fichier pour sauvegarder les scores.\n");
+    }
+}
+
+// Fonction pour afficher les scores des joueurs à la fin du jeu
+void afficher_scores(int scores[], int nj) {
+    printf("\nScores finaux :\n");
+    for (int i = 0; i < nj; i++) {
+        printf("Joueur %d : %d points\n", i + 1, scores[i]);
+    }
+}
+
+int choisir_nombre_joueurs() {
+    int nj;
+    do {
+        printf("Choisissez le nombre de joueurs :\n");
+        printf("2 joueurs ou 4 joueurs ?\n");
+        scanf("%d", &nj);
+        if (nj!=2 && nj!=4) {
+            printf("Choix invalide\n");
+        }
+    }while (nj!=2 && nj!=4);
+    if (nj==2) {
+        return 2;
+    }
+    else if (nj==4) {
+        return 4;
+    }
+}
+
+void initialiser_barrieres (int barrieres[], int nj) {
+    for(int i=0; i <nj ; i++){
+        if(nj==2) {
+            barrieres[i]=10;
+        }
+        else{
+            barrieres[i]=5;
+        }
+    }
+}
+
+
+void initialiser_plateau(char plateau[T][T],int nj)
+{
+    int i,j;
+    for(i=0; i<T; i++) //pour chaque ligne
+    {
+        for(j=0; j<T; j++) ///pour parcourir toute les cases de la ligne
+        {
+            plateau[i][j]=0; ///la case est mise à vide (0)
+        }
+    }
+    if(nj==2)//si 2 joueurs, on met les pions au milieu des lignes du haut (indice 0) et du bas (indice T-1)
+    {
+        plateau[0][T/2]=1;
+        plateau[T-1][T/2]=2;
+    }
+    else
+    {
+        //sinon (4 joueurs) : pions dans chaque angle.
+        plateau[0][T/2]=1;
+        plateau[T-1][T/2]=2;
+        plateau[T/2][0]=3;
+        plateau[T/2][T-1]=4;
+    }
+}
+
+
+int menu_action (){
+    int selec=0;
+    int validation=0;
+    do{
+        printf("Entrez l'action que vous souhaitez effectue : \n 1)poser une barriere\n 2)deplacer son pion\n 3)sauter son tour\n 4)abandon de la partie\n"); //affiche les possibilités
+        scanf("%d", &selec);
+        if(selec<5 && selec>0){ //verifie que le nombre saisi est correct
+            if (selec==4){ //si le joueur décide d'abandonner un avertissement s'ouvre en cas de mauvaise manipulation
+                printf("attention tout abandon est définitif et entraine directement la fin de la partie\n");
+                printf("saisissez 1 si vous souhaitez abandonner definitivement\n");
+                scanf("%d", &validation); //on demande la saisi d'une validation à la main pour l'abandon
+                if (validation!=1){
+                    selec=0;
+                    printf("vous allez etre renvoye au menu");
+                }
+            }
+            else {
+                validation=1; //on valide que le programme a bien été effectué
+                }
+        }
+    }while(validation!=1); //tant que le programme n'a pas bien été effectué donc tant qu'on n'a pas choisi une option valide, le menu se relance
+    return selec; //on retourne à notre main l'option choisi
+}
+
+
+
+void afficher_plateau(char plateau[T][T])
+{
+    int i,j;
+    //pour chaque ligne
+    for(i=0; i<T; i++)
+    {
+        //si la ligne est paire
+        if(i%2==0)
+        {
+            for(j=0; j<T; j++)
+            {
+                //si la colonne est paire
+                if(j%2==0) {
+                    switch (plateau[i][j]) {
+                        case 1:
+                            printf("| %c ", 0x03); // Affichage du pion 1
+                        break;
+                        case 2:
+                            printf("| %c ",0x04); //Affichage du pion 2
+                        break;
+                        case 3:
+                            printf("| %c ",0x05); //Affichage du pion 3
+                        break;
+                        case 4:
+                            printf("| %c ",0x06); //Affichage du pion 4
+                        break;
+                        default:
+                            printf("| %c ", ' '); //Case vide
+                        break;
+
+                    }
+                }
+
+                //si la colonne est impaire
+                else
+                {
+                    //si la case contient la valeur 5 (mur)
+                    if(plateau[i][j]==5) printf("|%c",'X');
+                    //sinon la case est vide
+                    else printf("| ");
+                }
+            }
+            //fin de la ligne
+            printf("|\n");
+        }
+        //si la ligne est impaire
+        else{
+            for(j=0; j<T; j++)
+            {
+                //si la colonne est paire
+                if(j%2==0){
+                    //si la case contient la valeur 5 (mur)
+                    if(plateau[i][j]==5) printf(" %c%c%c ",'X','X','X');
+                    else printf("     ");
+                }
+                //si la colonne est impaire
+                else{
+                    //si la case contient la valeur 5 (mur)
+                    if(plateau[i][j]==5) printf("%c",'X');
+                    else printf(" ");
+                }
+            }
+            printf("\n");
+        }
+    }
+}
+
+
+
+
+
+int poser_barriere(char plateau[T][T]) {
+    char choixBarriere ='0';
+    char position= '0';
+    int i=0;
+    int j=0;
+    printf("Voulez-vous posez une barriere ? o=oui sinon saisissez un autre caractere \n");
+    scanf(" %c", &choixBarriere);
+    if(choixBarriere=='o') {
+        printf("saisissez la position de la barriere h pour horizontale et v pour verticale \n");
+        scanf(" %c", &position);
+        switch (position) {
+            case 'h' :
+
+                    printf("Saisissez une ligne impaire\n", i);
+                    scanf("%d", &i);
+                    if( i%2!=0 && i>0 && i<T) {
+                        printf("Votre barriere est placee a la ligne %d\n", i);
+
+                    }
+                    else {
+                        printf("Votre saisie est invalide\n");
+                        return 0;
+                    }
+
+
+                printf("Saisissez une colonne paire\n", j);
+                scanf("%d", &j);
+                if( j%2==0 && j>0 && j<T) {
+                    printf("Votre barriere est placee a la colonne %d\n", i);
+
+                }
+                else {
+                    printf("Votre saisie est invalide\n");
+                    return 0;
+                }
+            if (plateau[i][j]==5 || plateau[i][j+1]==5 || plateau[i][j+2]==5) {
+                printf("Vous ne pouvez pas placer une barriere sur une barriere deja existante\n");
+                return 0;
+            }
+            else {
+                plateau[i][j]=5;
+                plateau[i][j+1]=5;
+                plateau[i][j+2]=5;
+                return 1;
+            }
+
+            case 'v' :
+
+                    printf("Saisissez une ligne paire\n", i);
+                    scanf("%d", &i);
+                    if( i%2==0 && i>0 && i<T) {
+                        printf("Votre barriere est placee a la ligne %d\n", i);
+                    }
+                    else {
+                        printf("Votre saisie est invalide\n");
+                        return 0;
+                    }
+
+
+                printf("Saisissez une colonne impaire\n", j);
+                scanf("%d", &j);
+                if( j%2!=0 && j>0 && j<T) {
+                    printf("Votre barriere est placee a la colonne %d\n", j);
+                }
+                else {
+                    printf("Votre saisie est invalide\n");
+                    return 0;
+                }
+            if (plateau[i][j]==5 || plateau[i+1][j]==5 || plateau[i+2][j]==5) {
+                printf("Vous ne pouvez pas placer une barriere sur une barriere deja existante\n");
+                return 0;
+            }
+            else {
+                plateau[i][j]=5;
+                plateau[i+1][j]=5;
+                plateau[i+2][j]=5;
+                return 1;
+            }
+        }
+    }
+    else {
+        printf("vous allez etre renvoye au menu\n");
+        return 0;
+    }
+}
+
+
+
+
+
+bool deplacer_pion(char plateau[T][T], int x, int y, char direction) {
+    printf("Entrer les coordonnees du pion a deplacer (x y) : \n");
+    scanf("%d %d", &x, &y );
+    printf("Entrer la direction h = haut, b = bas, d = droite, g = gauche \n");
+    scanf(" %c", &direction);
+
+
+    if ( x<0 || x>= T || y<0 || y>= T || plateau[x][y]==0) {
+        return false; //Position invalide ou case vide
+    }
+    int newX = x, newY = y;
+    switch (direction) {
+        case'h':
+            newX= newX-2;
+        if (plateau[x-1][y]==5) {
+            printf("Une barriere bloque le chemin vers le haut\n");
+            return false;
+        }
+        break;
+        case'b':
+            newX=newX+2;
+        if (plateau[x+1][y]==5) {
+            printf("Une barriere bloque le chemin vers le bas\n");
+            return false;
+        }
+        break;
+        case'd':
+            newY=newY+2;
+        if (plateau[x][y+1]==5) {
+            printf("Une barriere bloque le chemin vers la droite\n");
+            return false;
+        }
+        break;
+        case'g':
+            newY=newY-2;
+        if (plateau[x][y-1]==5) {
+            printf("Une barriere bloque le chemin vers la gauche\n");
+            return false;
+        }
+        break;
+        default:
+            printf("Le mouvement n'est pas possible\n");
+            return false; //Direction invalide
+    }
+    if (newX <0 || newX >=T ||newY <0 || newY >=T || plateau[newX][newY] !=0) {
+        printf("Vous ne pouvez pas vous deplacer ici, cette case est deja occupee\n");
+        return false; //Déplacement impossible
+    }
+    plateau[newX][newY]=plateau[x][y];
+    plateau[x][y] =0;
+
+    return true;
+}
+
