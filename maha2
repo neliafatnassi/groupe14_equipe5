@@ -1,1 +1,516 @@
+///main.c
+#include <stdio.h>
+#include <stdbool.h>
+#include "plateau.h"
+#include "joueurs.h"
+
+int main() {
+    char plateau[T][T]; // Plateau de jeu
+    Joueur joueurs[4]; // Tableau des joueurs
+    int nj; // Nombre de joueurs
+    int choix; // Choix du menu principal
+    int joueur_actuel = 0; // Index du joueur qui doit jouer
+
+    // Initialisation du plateau
+    for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+            plateau[i][j] = 0;
+        }
+    }
+
+    do {
+        // Affiche le menu principal et récupère le choix
+        choix = afficher_menu_principal();
+
+        switch (choix) {
+            case 1: // Nouvelle partie
+                nj = choisir_nombre_joueurs();
+                initialiser_joueurs(joueurs, nj);
+                initialiser_plateau(plateau, nj);
+                printf("Nouvelle partie démarrée !\n");
+                afficher_plateau(plateau);
+
+                // Boucle principale de la partie
+                while (true) {
+                    printf("\nTour de %s.\n", joueurs[joueur_actuel].nom);
+                    int action = menu_action();
+
+                    if (action == 1) { // Poser une barrière
+                        if (joueurs[joueur_actuel].barrieres > 0) {
+                            if (poser_barriere(plateau)) {
+                                joueurs[joueur_actuel].barrieres--;
+                                printf("Il reste %d barrières à %s.\n", joueurs[joueur_actuel].barrieres, joueurs[joueur_actuel].nom);
+                            }
+                        } else {
+                            printf("Vous n'avez plus de barrières à placer !\n");
+                        }
+                    } else if (action == 2) { // Déplacer le pion
+                        int x = joueurs[joueur_actuel].x;
+                        int y = joueurs[joueur_actuel].y;
+                        char direction;
+
+                        if (deplacer_pion(plateau, x, y, direction)) {
+                            // Met à jour la position du joueur
+                            joueurs[joueur_actuel].x = x;
+                            joueurs[joueur_actuel].y = y;
+
+                            // Vérifie si le joueur a gagné
+                            if (a_gagne(joueur_actuel + 1, plateau)) {
+                                printf("\nFélicitations %s, vous avez gagné !\n", joueurs[joueur_actuel].nom);
+                                joueurs[joueur_actuel].score += 5;
+                                break;
+                            }
+                        }
+                    } else if (action == 3) { // Sauter le tour
+                        printf("%s passe son tour.\n", joueurs[joueur_actuel].nom);
+                    } else if (action == 4) { // Abandonner la partie
+                        printf("%s abandonne la partie.\n", joueurs[joueur_actuel].nom);
+                        break;
+                    }
+
+                    // Afficher le plateau après chaque action
+                    afficher_plateau(plateau);
+
+                    // Passe au joueur suivant
+                    joueur_actuel = (joueur_actuel + 1) % nj;
+                }
+
+                // Sauvegarde les scores après la fin de la partie
+                sauvegarder_scores(joueurs, nj);
+                break;
+
+            case 2: // Charger une partie
+                if (charger_partie(plateau, joueurs, &nj)) {
+                    printf("Partie chargée. Voici l'état actuel :\n");
+                    afficher_plateau(plateau);
+                } else {
+                    printf("Impossible de charger la partie.\n");
+                }
+                break;
+
+            case 3: // Afficher les scores
+                afficher_scores(joueurs, nj);
+                break;
+
+            case 4: // Quitter
+                printf("Au revoir ! Merci d'avoir joué.\n");
+                break;
+
+            default:
+                printf("Choix invalide. Veuillez réessayer.\n");
+                break;
+        }
+    } while (choix != 4);
+
+    return 0;
+}
+
+
+/////plateau.c
+#include <stdio.h>
+#include <stdbool.h>
+#include "plateau.h"
+#include "joueurs.h"
+
+void initialiser_plateau(char plateau[T][T], int nj) {
+    for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+            plateau[i][j] = 0; // La case est vide
+        }
+    }
+
+    if (nj == 2) {
+        plateau[0][T / 2] = 1; // Joueur 1
+        plateau[T - 1][T / 2] = 2; // Joueur 2
+    } else {
+        plateau[0][T / 2] = 1; // Joueur 1
+        plateau[T - 1][T / 2] = 2; // Joueur 2
+        plateau[T / 2][0] = 3; // Joueur 3
+        plateau[T / 2][T - 1] = 4; // Joueur 4
+    }
+}
+
+void afficher_plateau(char plateau[T][T]) {
+    int i, j;
+    for (i = 0; i < T; i++) {
+        if (i % 2 == 0) {
+            for (j = 0; j < T; j++) {
+                if (j % 2 == 0) {
+                    switch (plateau[i][j]) {
+                        case 1: printf("| %d ", 1); break;
+                        case 2: printf("| %d ", 2); break;
+                        case 3: printf("| %d ", 3); break;
+                        case 4: printf("| %d ", 4); break;
+                        default: printf("| %c ", ' '); break;
+                    }
+                } else {
+                    if (plateau[i][j] == 5) printf("|%c", 'X'); // Barrière
+                    else printf("| ");
+                }
+            }
+            printf("|\n");
+        } else {
+            for (j = 0; j < T; j++) {
+                if (j % 2 == 0) {
+                    if (plateau[i][j] == 5) printf(" %c%c%c ", 'X', 'X', 'X');
+                    else printf("     ");
+                } else {
+                    if (plateau[i][j] == 5) printf("%c", 'X');
+                    else printf(" ");
+                }
+            }
+            printf("\n");
+        }
+    }
+}
+
+void sauvegarder_partie(Joueur joueurs[], int nb_joueurs, char plateau[T][T]) {
+    FILE *fichier = fopen("partie_en_cours.txt", "w");
+    if (fichier == NULL) {
+        printf("Erreur lors de l'ouverture du fichier de sauvegarde.\n");
+        return;
+    }
+
+    // Sauvegarder le plateau
+    for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+            fprintf(fichier, "%c ", plateau[i][j]);
+        }
+        fprintf(fichier, "\n");
+    }
+
+    // Sauvegarder les differenrts joueurs
+    for (int i = 0; i < nb_joueurs; i++) {
+        fprintf(fichier, "%s %d %d %d %d\n",
+            joueurs[i].nom,
+            joueurs[i].score,
+            joueurs[i].x,
+            joueurs[i].y,
+            joueurs[i].barrieres);
+    }
+
+    fclose(fichier);
+}
+
+
+
+bool charger_partie(char plateau[T][T], Joueur joueurs[], int *nb_joueurs) {
+    FILE *fichier = fopen("partie_en_cours.txt", "r");
+    if (fichier == NULL) {
+        printf("Erreur lors du chargement de la partie.\n");
+        return false;
+    }
+
+    // Charger le plateau du jeu
+    for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+            fscanf(fichier, " %c", &plateau[i][j]);
+        }
+    }
+
+    // Charger le nombre de joueurs
+    fscanf(fichier, "%d", nb_joueurs);
+
+    // Charger les informations des joueurs
+    for (int i = 0; i < *nb_joueurs; i++) {
+        fscanf(fichier, "%s %d %d %d %d",
+               joueurs[i].nom,
+               &joueurs[i].score,
+               &joueurs[i].x,
+               &joueurs[i].y,
+               &joueurs[i].barrieres);
+    }
+
+    fclose(fichier);
+    return true;
+}
+
+
+bool deplacer_pion(char plateau[T][T], int x, int y, char direction) {
+    printf("Entrer les coordonnées du pion à déplacer (x y) : \n");
+    scanf("%d %d", &x, &y);
+    printf("Entrer la direction h = haut, b = bas, d = droite, g = gauche \n");
+    scanf(" %c", &direction);
+
+    if (x < 0 || x >= T || y < 0 || y >= T || plateau[x][y] == 0) {
+        printf("Déplacement invalide. Position hors limites.\n");
+        return false;
+    }
+
+    int newX = x, newY = y;
+    switch (direction) {
+        case 'h': newX -= 2; break;
+        case 'b': newX += 2; break;
+        case 'g': newY -= 2; break;
+        case 'd': newY += 2; break;
+        default:
+            printf("Direction invalide.\n");
+            return false;
+    }
+
+    // Vérification des limites et des obstacles
+    if (newX < 0 || newX >= T || newY < 0 || newY >= T || plateau[newX][newY] != 0) {
+        printf("Déplacement impossible. hors limites.\n");
+        return false;
+    }
+
+    // Vérification des barrières
+    if ((direction == 'h' && plateau[x - 1][y] == 5) ||
+        (direction == 'b' && plateau[x + 1][y] == 5) ||
+        (direction == 'g' && plateau[x][y - 1] == 5) ||
+        (direction == 'd' && plateau[x][y + 1] == 5)) {
+        printf("Une barrière bloque le chemin.\n");
+        return false;
+    }
+
+    // Déplacement valide
+    plateau[newX][newY] = plateau[x][y];
+    plateau[x][y] = 0;
+    printf("Déplacement effectué.\n");
+    return true;
+}
+
+int poser_barriere(char plateau[T][T]) {
+    char choixBarriere = '0';
+    char position = '0';
+    int i = 0, j = 0;
+
+    printf("Voulez-vous poser une barrière ? o=oui sinon saisissez un autre caractère \n");
+    scanf(" %c", &choixBarriere);
+
+    if (choixBarriere == 'o') {
+        printf("Saisissez la position de la barrière h pour horizontale et v pour verticale \n");
+        scanf(" %c", &position);
+
+        if (position == 'h') {
+            printf("Saisissez une ligne impaire : ");
+            scanf("%d", &i);
+            if (i % 2 == 0 || i <= 0 || i >= T) {
+                printf("Ligne invalide.\n");
+                return 0;
+            }
+            printf("Saisissez une colonne paire : ");
+            scanf("%d", &j);
+            if (j % 2 != 0 || j <= 0 || j >= T - 2) {
+                printf("Colonne invalide.\n");
+                return 0;
+            }
+            if (plateau[i][j] == 5 || plateau[i][j + 1] == 5 || plateau[i][j + 2] == 5) {
+                printf("Vous ne pouvez pas placer une barrière sur une barrière déjà existante.\n");
+                return 0;
+            }
+            plateau[i][j] = 5;
+            plateau[i][j + 1] = 5;
+            plateau[i][j + 2] = 5;
+            printf("Barrière horizontale posée avec succès.\n");
+            return 1;
+        }
+
+        if (position == 'v') {
+            printf("Saisissez une colonne impaire : ");
+            scanf("%d", &j);
+            if (j % 2 == 0 || j <= 0 || j >= T) {
+                printf("Colonne invalide.\n");
+                return 0;
+            }
+            printf("Saisissez une ligne paire : ");
+            scanf("%d", &i);
+            if (i % 2 != 0 || i <= 0 || i >= T - 2) {
+                printf("Ligne invalide.\n");
+                return 0;
+            }
+            if (plateau[i][j] == 5 || plateau[i + 1][j] == 5 || plateau[i + 2][j] == 5) {
+                printf("Vous ne pouvez pas placer une barrière sur une barrière déjà existante.\n");
+                return 0;
+            }
+            plateau[i][j] = 5;
+            plateau[i + 1][j] = 5;
+            plateau[i + 2][j] = 5;
+            printf("Barrière verticale posée avec succès.\n");
+            return 1;
+        }
+
+        printf("Position invalide.\n");
+        return 0;
+    }
+
+    printf("Retour au menu principal.\n");
+    return 0;
+}
+
+////plateau.h
+#ifndef PLATEAU_H
+#define PLATEAU_H
+#include "joueurs.h"
+#define T 17 // Taille du plateau
+
+// Fonction pour initialiser le plateau
+void initialiser_plateau(char plateau[T][T], int nj);
+
+// Fonction pour afficher le plateau
+void afficher_plateau(char plateau[T][T]);
+
+// Fonction pour déplacer un pion
+bool deplacer_pion(char plateau[T][T], int x, int y, char direction);
+
+// Fonction pour poser une barrière
+int poser_barriere(char plateau[T][T]);
+
+// Fonction pour sauvegarder une partie
+void sauvegarder_partie(Joueur joueurs[], int nb_joueurs, char plateau[T][T]);
+
+// Fonction pour charger une partie
+bool charger_partie(char plateau[T][T], Joueur joueurs[], int *nb_joueurs);
+
+#endif // PLATEAU_H
+
+
+///joueurs.h
+//
+// Created by MAHAMADOU KOÏTA on 24/11/2024.
+//
+
+#ifndef JOUEURS_H
+#define JOUEURS_H
+#define T 17
+typedef struct {
+    char nom[50];
+    int x, y; // Position du pion
+    int barrieres; // Nombre de barrières restantes
+    int score; // Score du joueur
+} Joueur;
+
+int afficher_menu_principal();
+void initialiser_joueurs(Joueur joueurs[], int nj);
+void afficher_scores(Joueur joueurs[], int nj);
+int choisir_nombre_joueurs();
+void sauvegarder_scores(Joueur joueurs[], int nj);
+int menu_action();
+bool a_gagne(int joueur, char plateau[T][T]);
+
+#endif // JOUEURS_H
+
+///joueurs.c
+
+//
+// Created by MAHAMADOU KOÏTA on 24/11/2024.
+//
+#include <stdio.h>
+#include "joueurs.h"
+
+bool a_gagne(int joueur, char plateau[T][T]) {
+    // Vérifie si le joueur 1 atteint la ligne la plus basse
+    if (joueur == 1) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[T - 1][i] == 1) {
+                return true;  // Le joueur 1 a gagné
+            }
+        }
+    }
+    // Si le joueur 2 atteint la ligne la plus haute, il gagne
+    if (joueur == 2) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[0][i] == 2) {
+                return true;  // Le joueur 2 a gagné
+            }
+        }
+    }
+    // Ajoute des conditions similaires pour les joueurs 3 et 4 si nécessaire
+    if (joueur == 3) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[0][i] == 3) {
+                return true;  // Le joueur 3 a gagné
+            }
+        }
+    }
+    if (joueur == 4) {
+        for (int i = 0; i < T; i++) {
+            if (plateau[T - 1][i] == 4) {
+                return true;  // Le joueur 4 a gagné
+            }
+        }
+    }
+    return false;  // Aucun joueur n'a gagné
+}
+
+// Affichage du menu principal
+int menu_action() {
+    int choix;
+    int validation = 0;
+
+    do {
+        printf("\nEntrez l'action que vous souhaitez effectuer : \n");
+        printf("1) Poser une barrière\n");
+        printf("2) Déplacer son pion\n");
+        printf("3) Sauter son tour\n");
+        printf("4) Abandonner la partie\n");
+        scanf("%d", &choix);
+
+        // Vérification de la validité du choix
+        if (choix >= 1 && choix <= 4) {
+            validation = 1;
+        } else {
+            printf("Choix invalide, veuillez entrer un nombre entre 1 et 4.\n");
+        }
+
+    } while (validation != 1);
+
+    return choix;  // Retourne l'action choisie
+}
+int afficher_menu_principal() {
+    int choix;
+    printf("\n---Menu Principal ---n");
+    printf("1. Nouvelle partie\n");
+    printf("2. Charger une partie\n");
+    printf("3. Afficher les scores\n");
+    printf("4. Quitter\n");
+    printf("entrez votre votre choix svp : ");
+    scanf("%d", &choix);
+    while (choix < 1 || choix > 4) {
+        printf("vottre choix est invalide. Veuillez réessayer svp: ");
+        scanf("%d", &choix);
+    }
+    return choix;
+}
+
+// Initialisation des joueurs
+void initialiser_joueurs(Joueur joueurs[], int nj) {
+    for (int i = 0; i < nj; i++) {
+        printf("Entrez le nom du joueur %d : ", i + 1);
+        scanf("%s", joueurs[i].nom);
+        joueurs[i].score = 0; // Initialisation des scores à 0
+        joueurs[i].barrieres = (nj == 2) ? 10 : 5; // Nombre de barrières selon le nombre de joueurs
+    }
+}
+
+// Affichage des scores des joueurs
+void afficher_scores(Joueur joueurs[], int nj) {
+    printf("\n=== Scores des joueurs ===\n");
+    for (int i = 0; i < nj; i++) {
+        printf("%s : %d points\n", joueurs[i].nom, joueurs[i].score);
+    }
+}
+
+// Choix du nbre de joueurs
+int choisir_nombre_joueurs() {
+    int nj;
+    do {
+        printf("Choisissez le nombre de joueurs (2 ou 4) : ");
+        scanf("%d", &nj);
+    } while (nj != 2 && nj != 4);
+    return nj;
+}
+
+// Sauvegarde des scores dans un fichier
+void sauvegarder_scores(Joueur joueurs[], int nj) {
+    FILE *file = fopen("scores.txt", "w");
+    if (file != NULL) {
+        for (int i = 0; i < nj; i++) {
+            fprintf(file, "%s : %d points\n", joueurs[i].nom, joueurs[i].score);
+        }
+        fclose(file);
+    } else {
+        printf("Erreur lors de la sauvegarde des scores.\n");
+    }
+}
 
