@@ -9,18 +9,37 @@ int main() {
     int x, y;
     int choix=0;
     int validation = 0;
-    int i=0, j=0; //initialisation d'un plateau pour 4 joueurs
-    initialiser_plateau(pl,4);
+    int i=0, j=0;
+    int nj;
+    int barrieres[4] = {0};
+
+    nj = choisir_nombre_joueurs();
+
+    initialiser_plateau(pl,nj);
+
+    initialiser_barrieres(barrieres, nj);
+
+    int joueur_actuel =1;
 
         do {
             do {
                 printf("\n\n\n");
                 afficher_plateau(pl);
+                printf("C'est au joueur %d de jouer\n", joueur_actuel);
                 validation =0; //on met notre validation à 0
                 choix=menu_action();
-                if (choix==1){
-                    validation= poser_barriere(pl); //si la barriere s'est bien pose alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
+                if (choix==1) {
+                    if(barrieres[joueur_actuel-1] > 0) {
+                        validation= poser_barriere(pl); //si la barriere s'est bien pose alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
+                        if (validation) {
+                            barrieres[joueur_actuel-1]--; //Réduire le nombre de barrières du joueur
+                            printf("Joueur %d, il vous reste %d barrieres\n", joueur_actuel, barrieres[joueur_actuel-1]);
+                        }
+                    }else{
+                        printf("Joueur %d , vous n'avez plus de barrieres disponibles\n", joueur_actuel);
+                    }
                 }
+
                 if (choix==2){
                     validation= deplacer_pion(pl,x,y, direction); //si le pion s'est déplace correctement alors le programme renvoie 1 donc il valide l'action sinon il renvoie 0
                 }
@@ -28,12 +47,16 @@ int main() {
                     afficher_plateau(pl); //ici le joueur décide de sauter son tour donc la validation est automatique
                     validation = 1;
                 }
-            } while(validation!=1);  //tant qu'une action n'a pas été validée le programme se relance
+            } while(validation!=1);//tant qu'une action n'a pas été validée le programme se relance
+
+            joueur_actuel = (joueur_actuel % nj) + 1; //On passe au joueur suivant
             afficher_plateau(pl);
         } while (choix!=4);  //tant que le choix 4 n'est pas fait la partie continue
         printf("L'un des 2 joueurs abandonne");
         return 1;
     }
+
+
 
 
 
@@ -46,9 +69,9 @@ int main() {
 #ifndef TABLEAU_H
 #define TABLEAU_H
 #define T 17
-void monTableau(int tableauVide[9][9]);
-int config();
+int choisir_nombre_joueurs();
 void initialiser_plateau(char plateau[T][T],int nj);
+void initialiser_barrieres (int barrieres[], int nj);
 int menu_action ();
 void afficher_plateau(char plateau[T][T]);
 int poser_barriere(char plateau[T][T]);
@@ -67,21 +90,47 @@ int IA (char plateau[T][T], int *i, int *j);
 #include <stdlib.h>
 #include <time.h>
 
+int choisir_nombre_joueurs() {
+    int nj;
+    do {
+        printf("Choisissez le nombre de joueurs :\n");
+        printf("2 joueurs ou 4 joueurs ?\n");
+        scanf("%d", &nj);
+        if (nj!=2 && nj!=4) {
+            printf("Choix invalide\n");
+        }
+    }while (nj!=2 && nj!=4);
+    if (nj==2) {
+        return 2;
+    }
+    else if (nj==4) {
+        return 4;
+    }
+}
+
+void initialiser_barrieres (int barrieres[], int nj) {
+    for(int i=0; i <nj ; i++){
+        if(nj==2) {
+            barrieres[i]=10;
+        }
+        else{
+            barrieres[i]=5;
+        }
+    }
+}
+
+
 void initialiser_plateau(char plateau[T][T],int nj)
 {
     int i,j;
-    ///pour chaque ligne
-    for(i=0; i<T; i++)
+    for(i=0; i<T; i++) //pour chaque ligne
     {
-        ///pour parcourir toute les cases de la ligne
-        for(j=0; j<T; j++)
+        for(j=0; j<T; j++) ///pour parcourir toute les cases de la ligne
         {
-            ///la case est mise à vide (0)
-            plateau[i][j]=0;
+            plateau[i][j]=0; ///la case est mise à vide (0)
         }
     }
-    //si 2 joueurs, on met les pions au milieu des lignes du haut (indice 0) et du bas (indice T-1)
-    if(nj==2)
+    if(nj==2)//si 2 joueurs, on met les pions au milieu des lignes du haut (indice 0) et du bas (indice T-1)
     {
         plateau[0][T/2]=1;
         plateau[T-1][T/2]=2;
@@ -298,17 +347,34 @@ bool deplacer_pion(char plateau[T][T], int x, int y, char direction) {
     switch (direction) {
         case'h':
             newX= newX-2;
+        if (plateau[x-1][y]==5) {
+            printf("Une barriere bloque le chemin vers le haut\n");
+            return false;
+        }
         break;
         case'b':
             newX=newX+2;
+        if (plateau[x+1][y]==5) {
+            printf("Une barriere bloque le chemin vers le bas\n");
+            return false;
+        }
         break;
         case'd':
             newY=newY+2;
+        if (plateau[x][y+1]==5) {
+            printf("Une barriere bloque le chemin vers la droite\n");
+            return false;
+        }
         break;
         case'g':
             newY=newY-2;
+        if (plateau[x][y-1]==5) {
+            printf("Une barriere bloque le chemin vers la gauche\n");
+            return false;
+        }
         break;
         default:
+            printf("Le mouvement n'est pas possible\n");
             return false; //Direction invalide
     }
     if (newX <0 || newX >=T ||newY <0 || newY >=T || plateau[newX][newY] !=0) {
@@ -320,6 +386,7 @@ bool deplacer_pion(char plateau[T][T], int x, int y, char direction) {
 
     return true;
 }
+
 
 
 
